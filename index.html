@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>FPOSH GADGET HUB — E-Receipt</title>
+<meta name="theme-color" content="#ff5e95" />
+<style>
+  :root { --pink:#ff5e95; --ink:#0f172a; --muted:#6b7280; --stroke:#e5e7eb; --paper:#ffffff; }
+  html,body{margin:0;background:#f3f4f6;color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial,sans-serif}
+  .container{max-width:860px;margin:18px auto;padding:12px}
+  .sheet{background:var(--paper);border-radius:12px;box-shadow:0 10px 28px rgba(2,6,23,.1);overflow:hidden}
+  .header{display:flex;gap:16px;align-items:center;padding:18px 20px;border-bottom:1px solid var(--stroke)}
+  .logo{width:64px;height:64px;object-fit:contain;border-radius:8px}
+  .biz{flex:1;min-width:0}
+  .biz h1{margin:0;font-size:20px;letter-spacing:.3px}
+  .biz p{margin:3px 0 0;color:var(--muted);font-size:13px}
+  .meta{font-size:13px;color:var(--muted);text-align:right;min-width:170px}
+  .sec{padding:18px 20px;border-bottom:1px solid var(--stroke)}
+  label{display:block;font-weight:600;margin:0 0 6px 0;font-size:13px}
+  input[type="text"],input[type="date"],input[type="number"],textarea{
+    width:100%;padding:10px 12px;border:1px solid var(--stroke);border-radius:10px;font-size:14px;box-sizing:border-box;background:#fff
+  }
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .col{flex:1;min-width:220px}
+  .table{width:100%;border-collapse:collapse}
+  .table th,.table td{padding:10px;border-bottom:1px dashed #ececec;font-size:14px;text-align:left}
+  .table th{font-weight:700;color:#334155}
+  .actions{display:flex;gap:10px;justify-content:center;background:#fafafa;padding:14px}
+  button{border:0;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer}
+  .btn-dark{background:#0f172a;color:#fff}
+  .btn-ghost{background:#fff;border:1px solid var(--stroke);color:#0f172a}
+  .pinkbar{background:var(--pink);color:#fff;text-align:center;padding:10px 12px;font-weight:800;letter-spacing:.4px}
+  .totals{display:flex;justify-content:flex-end;padding:16px 20px;gap:28px}
+  .totals .col2{min-width:280px}
+  .totals .rowline{display:flex;justify-content:space-between;margin:6px 0}
+  .fw7{font-weight:700}
+  .num{font-variant-numeric:tabular-nums}
+  @media (max-width:640px){ .header{flex-direction:row;align-items:flex-start} .meta{text-align:left} }
+  @media print{
+    body{background:#fff}
+    .container{margin:0;padding:0}
+    .actions{display:none}
+    .sheet{border-radius:0;box-shadow:none}
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="sheet" id="receipt">
+      <!-- Header -->
+      <div class="header">
+        <img src="assets/logo.png" alt="FPOSH Logo" class="logo" />
+        <div class="biz">
+          <h1>FPOSH GADGET HUB</h1>
+          <p>Address: Computer Village, Ikeja — Lagos</p>
+          <p>WhatsApp: 07081138777</p>
+        </div>
+        <div class="meta">
+          <div>Receipt No: <span id="refPreview">—</span></div>
+          <div>Date: <span id="datePreview">—</span></div>
+        </div>
+      </div>
+
+      <!-- Customer block -->
+      <div class="sec">
+        <div class="row">
+          <div class="col">
+            <label>Customer's Name</label>
+            <input id="custName" type="text" placeholder="e.g. Adeola Balogun" />
+          </div>
+          <div class="col">
+            <label>Address</label>
+            <input id="custAddress" type="text" placeholder="Customer address" />
+          </div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <div class="col">
+            <label>Reference No.</label>
+            <input id="ref" type="text" placeholder="FPOSH-2025-0001" />
+          </div>
+          <div class="col" style="max-width:220px">
+            <label>Date</label>
+            <input id="date" type="date" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Items -->
+      <div class="sec">
+        <label>Items</label>
+        <table class="table" id="itemsTable">
+          <thead>
+            <tr>
+              <th style="width:12%">QTY</th>
+              <th style="width:53%">Description</th>
+              <th style="width:20%">Unit Price (₦)</th>
+              <th style="width:15%">Amount (₦)</th>
+            </tr>
+          </thead>
+          <tbody id="itemsBody">
+            <tr>
+              <td><input class="qty" type="number" value="1" min="1" style="width:70px" /></td>
+              <td><input class="desc" type="text" placeholder="iPhone 13 Pro Max" /></td>
+              <td><input class="unit" type="number" value="0" min="0" /></td>
+              <td class="amount num">₦0</td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="margin-top:10px;text-align:right">
+          <button class="btn-ghost" onclick="addRow()">+ Add item</button>
+        </div>
+      </div>
+
+      <!-- Notes / IMEI -->
+      <div class="sec">
+        <label>Notes / IMEI / Serial (optional)</label>
+        <textarea id="notes" rows="3" placeholder="IMEI: ...  Serial: ..."></textarea>
+      </div>
+
+      <!-- Totals -->
+      <div class="totals">
+        <div class="col2">
+          <div class="rowline"><div class="fw7">Subtotal:</div><div id="subtotal" class="num">₦0</div></div>
+          <div class="rowline"><div class="fw7">Tax / VAT:</div><div id="tax" class="num">₦0</div></div>
+          <div class="rowline"><div class="fw7">Total:</div><div id="total" class="num fw7">₦0</div></div>
+        </div>
+      </div>
+
+      <!-- Pink bar -->
+      <div class="pinkbar">THANKS FOR YOUR PATRONAGE</div>
+    </div>
+
+    <!-- Actions -->
+    <div class="actions">
+      <button class="btn-dark" id="downloadBtn">Download PDF</button>
+      <button class="btn-ghost" id="waBtn">Open WhatsApp (attach PDF)</button>
+      <button class="btn-ghost" id="resetBtn">Reset</button>
+    </div>
+  </div>
+
+  <!-- PDF library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js" integrity="sha512-YcsIPaQ2aJJSmyi4YwF0x3dMQgqFz6c7Bq0gql8W5F9f3w5k1xQO0Zo4m9k7n+YzIY4a+q9r7O9n2OQW7i0C9A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <script>
+    // Auto-fill date (today) + live preview
+    (function(){
+      const today = new Date().toISOString().split('T')[0];
+      const dateEl = document.getElementById('date');
+      dateEl.value = today;
+      document.getElementById('datePreview').innerText = today;
+      dateEl.addEventListener('change', e => document.getElementById('datePreview').innerText = e.target.value);
+    })();
+
+    // Reference live preview
+    document.getElementById('ref').addEventListener('input', e=>{
+      document.getElementById('refPreview').innerText = e.target.value || '—';
+    });
+
+    function addRow(){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><input class="qty" type="number" value="1" min="1" style="width:70px" /></td>
+        <td><input class="desc" type="text" placeholder="Description" /></td>
+        <td><input class="unit" type="number" value="0" min="0" /></td>
+        <td class="amount num">₦0</td>`;
+      document.getElementById('itemsBody').appendChild(tr);
+      attachRowHandlers(tr);
+      recalc();
+    }
+
+    function attachRowHandlers(scope){
+      (scope || document).querySelectorAll('.qty,.unit').forEach(el=>{
+        el.addEventListener('input', recalc);
+      });
+    }
+    attachRowHandlers(document);
+
+    function formatNaira(v){ return '₦' + new Intl.NumberFormat().format(v || 0); }
+
+    function recalc(){
+      let subtotal = 0;
+      document.querySelectorAll('#itemsBody tr').forEach(tr=>{
+        const q = tr.querySelector('.qty').valueAsNumber || 0;
+        const u = tr.querySelector('.unit').valueAsNumber || 0;
+        const amt = q * u;
+        tr.querySelector('.amount').textContent = formatNaira(amt);
+        subtotal += amt;
+      });
+      const tax = 0; // keep zero unless you add VAT
+      const total = subtotal + tax;
+      document.getElementById('subtotal').textContent = formatNaira(subtotal);
+      document.getElementById('tax').textContent = formatNaira(tax);
+      document.getElementById('total').textContent = formatNaira(total);
+    }
+    recalc();
+
+    // Download PDF
+    document.getElementById('downloadBtn').addEventListener('click', ()=>{
+      const opt = {
+        margin: 0.3,
+        filename: (document.getElementById('ref').value || 'fposh-receipt') + '.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+      };
+      html2pdf().set(opt).from(document.getElementById('receipt')).save();
+    });
+
+    // WhatsApp helper (opens chat; attach the PDF manually after download)
+    document.getElementById('waBtn').addEventListener('click', ()=>{
+      const name = encodeURIComponent(document.getElementById('custName').value || 'Customer');
+      const ref  = encodeURIComponent(document.getElementById('ref').value || '');
+      const total = encodeURIComponent(document.getElementById('total').textContent || '');
+      const msg = `Hi ${name},%0AYour receipt (Ref: ${ref}) total ${total}.%0AI will send the PDF now. Thank you for your patronage.`;
+      window.open(`https://wa.me/2347081138777?text=${msg}`, '_blank');
+    });
+
+    // Reset form
+    document.getElementById('resetBtn').addEventListener('click', ()=>{
+      document.getElementById('custName').value='';
+      document.getElementById('custAddress').value='';
+      document.getElementById('ref').value='';
+      document.getElementById('notes').value='';
+      document.getElementById('refPreview').innerText='—';
+      document.getElementById('itemsBody').innerHTML = `
+        <tr>
+          <td><input class="qty" type="number" value="1" min="1" style="width:70px" /></td>
+          <td><input class="desc" type="text" placeholder="iPhone 13 Pro Max" /></td>
+          <td><input class="unit" type="number" value="0" min="0" /></td>
+          <td class="amount num">₦0</td>
+        </tr>`;
+      attachRowHandlers(document);
+      recalc();
+    });
+  </script>
+</body>
+</html>
